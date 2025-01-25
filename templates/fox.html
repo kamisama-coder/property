@@ -1,0 +1,15 @@
+{% extends "index.html" %}
+{%block title%}
+{% for i in property_list %}
+<div class="card" style="width: 18rem;">
+    <img src={{i['cover']}} class="card-img-top">
+    <div class="card-body">
+      <h5 class="card-title">{{i['data'].id}}</h5>
+      <p class="card-text">{{i['data'].address}}</p>
+      <p class="card-text">Price = Rupee {{i['data'].price}} {{i['data'].price_suffix}}</p>
+      <p class="card-text">{{i['data'].phone}}</p>
+      <a href="{{ url_for('pic', index=i['data'].id) }}" class="btn btn-primary">Pic section</a>
+    </div>
+  </div>
+{%endfor%}  
+{%endblock%}

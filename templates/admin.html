@@ -1,0 +1,14 @@
+{% extends "index.html" %}
+{%block title%}
+{% for i in admin %}
+<div class="card" style="width: 18rem;">
+    <div class="card-body">
+      <h5 class="card-title">{{i.id}}</h5>
+      <p class="card-text">{{i.address}}</p>
+      <p class="card-text">Price = Rupee {{i.price}} {{i.price_suffix}}</p>
+      <p class="card-text">{{i.phone}}</p>
+      <a href="{{ url_for('nope', index=i.id) }}" class="btn btn-primary">Delete</a>
+    </div>
+  </div>
+{%endfor%}  
+{%endblock%}
