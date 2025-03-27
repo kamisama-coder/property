@@ -30,7 +30,7 @@ class Post(db.Model):
     cover = db.Column(db.LargeBinary,nullable=False)
     phone = db.Column(db.String(250),nullable=False)
     images = relationship('Picture', back_populates='property_relation')
-    user_id = db.Column(db.Integer,nullable=False)
+    user_id = db.Column(db.String(250),nullable=False)
     status = db.Column(db.String(250),nullable=False)
     
 class Picture(db.Model):
@@ -49,8 +49,8 @@ def is_within_radius(center_lat, center_lon, point_lat, point_lon, radius_km):
     distance_km = geodesic(center_point, point).kilometers
     return distance_km <= radius_km
 
-@app.route('/',  methods =["GET", "POST"])
-def hello_world():
+@app.route('/<string:index>',  methods =["GET", "POST"])
+def hello_world(index):
     if request.method == "POST":
        
        address = request.form.get("proxy_address")
@@ -63,7 +63,7 @@ def hello_world():
        file = request.files.getlist('file')
        file2 = request.files['file2']
        phone =  request.form.get("number")
-       user_id = request.form.get("id")
+       user_id = index
        status = request.form.get("status")
        new_user = Post(
             address=address,
@@ -87,8 +87,8 @@ def hello_world():
          )    
         db.session.add(new_pic)
         db.session.commit()
-       return render_template("index.html")
-    return render_template("index.html")
+       return render_template("index.html",index=index)
+    return render_template("index.html" ,index=index)
 
 @app.route('/search',  methods =["GET", "POST"])
 def search():
@@ -127,7 +127,7 @@ def prof():
         
      return render_template('finish.html')   
 
-@app.route('/pic/<int:index>',  methods =["GET", "POST"])
+@app.route('/pic/<string:index>',  methods =["GET", "POST"])
 def pic(index):
      results = db.session.query(Picture).all()
      pic_list = []
@@ -138,12 +138,12 @@ def pic(index):
            pic_list.append(data_url)
      return render_template("pic.html", pic_list = pic_list)
 
-@app.route('/admin/<int:index>',  methods =["GET", "POST"])
+@app.route('/admin/<string:index>',  methods =["GET", "POST"])
 def admin(index):
     admin = db.session.query(Post).filter(Post.user_id == index).all()
     return render_template("admin.html", admin = admin)
 
-@app.route('/delete/<int:index>',  methods =["GET", "POST"])
+@app.route('/delete/<string:index>',  methods =["GET", "POST"])
 def nope(index):
     works = db.session.query(Picture).filter(Picture.property_id == index).all()
     for work in works:
