@@ -127,7 +127,7 @@ def prof():
         
      return render_template('finish.html')   
 
-@app.route('/pic/<string:index>',  methods =["GET", "POST"])
+@app.route('/pic/<int:index>',  methods =["GET", "POST"])
 def pic(index):
      results = db.session.query(Picture).all()
      pic_list = []
@@ -143,7 +143,7 @@ def admin(index):
     admin = db.session.query(Post).filter(Post.user_id == index).all()
     return render_template("admin.html", admin = admin)
 
-@app.route('/delete/<string:index>',  methods =["GET", "POST"])
+@app.route('/delete/<int:index>',  methods =["GET", "POST"])
 def nope(index):
     works = db.session.query(Picture).filter(Picture.property_id == index).all()
     for work in works:
