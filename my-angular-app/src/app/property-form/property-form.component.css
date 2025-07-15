@@ -1,0 +1,27 @@
+form {
+  background: #ffffff;
+  border-radius: 1rem;
+  padding: 2rem;
+  box-shadow: 0 1.5rem 3rem rgba(0, 0, 0, 0.1);
+}
+
+label {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+input[type="file"] {
+  padding: 0.5rem;
+}
+
+input[type="text"],
+select {
+  transition: all 0.3s ease-in-out;
+}
+
+input[type="text"]:focus,
+select:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  border-color: #80bdff;
+}

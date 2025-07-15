@@ -1,0 +1,20 @@
+<!-- search-properties.component.html -->
+<div class="container mt-5">
+  <h2 class="mb-4">Search Properties</h2>
+
+
+    <div class="mb-3">
+      <label for="query" class="form-label">Enter your property query:</label>
+      <input
+        type="text"
+        id="query"
+        class="form-control"
+        [(ngModel)]="query"
+        placeholder="e.g. 2 BHK in Mumbai under 1 crore"
+      />
+    </div>
+    <button type="submit" class="btn btn-success" (click)="onsearch()">Search</button>
+
+
+  <div *ngIf="error" class="alert alert-danger mt-3">{{ errorfound }}</div>
+</div>

@@ -1,0 +1,79 @@
+<form [formGroup]="propertyForm" (ngSubmit)="submitForm()" enctype="multipart/form-data" class="container py-4">
+  <div class="row g-4">
+    <div class="col-md-6" *ngFor="let field of [
+      { label: 'Address', name: 'address' },
+      { label: 'Price', name: 'price', placeholder: 'Enter price (e.g., 25)' },
+      { label: 'Area (sqft)', name: 'area_sqft', placeholder: 'Enter area in sqft (e.g., 1200)' },
+      { label: 'Proxy Address', name: 'proxy_address' },
+      { label: 'ID', name: 'id' },
+      { label: 'Phone', name: 'phone' },
+      { label: 'Longitude', name: 'long' },
+      { label: 'Latitude', name: 'latt' }
+    ]">
+      <div class="form-group">
+        <label class="fw-semibold">{{ field.label }}</label>
+        <input class="form-control rounded-pill px-3 py-2 shadow-sm"
+               [formControlName]="field.name"
+               [placeholder]="field.placeholder || ''" />
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-semibold">Apartment Size</label>
+      <select class="form-control rounded-pill shadow-sm" formControlName="size">
+        <option *ngFor="let size of [1,2,3,4]">{{ size }}</option>
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-semibold">Price Suffix</label>
+      <select class="form-control rounded-pill shadow-sm" formControlName="price_suffix">
+        <option>Lakh</option>
+        <option>Crore</option>
+      </select>
+    </div>
+
+    <div class="col-md-6">
+      <label class="fw-semibold">Status</label>
+      <select class="form-control rounded-pill shadow-sm" formControlName="status">
+        <option>Rent</option>
+        <option>Sell</option>
+      </select>
+    </div>
+
+    <!-- Suggestions -->
+    <div class="col-12" *ngFor="let suggestion of suggestions">
+      <button type="button" (click)="onFileSelected(suggestion)" class="btn btn-outline-info w-100 shadow-sm">
+        {{ suggestion.display_name }}
+      </button>
+    </div>
+
+    <!-- Cover photo -->
+    <div class="col-12">
+      <label class="fw-semibold">Cover Photo</label>
+      <input type="file" class="form-control shadow-sm" (change)="handlecoverinpput($event)" multiple>
+    </div>
+
+    <!-- Dynamic Image Inputs -->
+    <div class="col-12">
+      <button type="button" class="btn btn-outline-secondary mb-3" (click)="addImageQuery(null)">➕ Add Image</button>
+      <div class="row g-3" *ngFor="let input of imageInputs; let i = index">
+        <div class="col-md-6">
+          <input type="file" class="form-control shadow-sm" (change)="handleFileInput($event, i)" [attr.data-index]="i" multiple>
+        </div>
+        <div class="col-md-6">
+          <input type="text"
+                 class="form-control shadow-sm rounded-pill"
+                 placeholder="Enter vector name for image {{ i + 1 }}"
+                 [(ngModel)]="imageInputs[i].vector"
+                 [ngModelOptions]="{ standalone: true }" />
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit -->
+    <div class="col-12">
+      <button type="submit" class="btn btn-primary w-100 shadow">🚀 Submit</button>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,31 @@
+.custom-card {
+  border-radius: 1rem;
+  backdrop-filter: blur(6px);
+  background: rgba(255, 255, 255, 0.8);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.custom-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 1rem 2rem rgba(0, 0, 0, 0.15);
+}
+
+.card-title {
+  color: #1d3557;
+}
+
+.btn-outline-primary,
+.btn-outline-secondary {
+  border-radius: 2rem;
+  transition: background-color 0.3s ease;
+}
+
+.btn-outline-primary:hover {
+  background-color: #1d3557;
+  color: white;
+}
+
+.btn-outline-secondary:hover {
+  background-color: #457b9d;
+  color: white;
+}

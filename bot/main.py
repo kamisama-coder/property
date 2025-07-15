@@ -15,7 +15,7 @@ async def launch_web_ui1(update: Update, callback: CallbackContext):
     dict['id' ]= update.message.from_user.id
     dict['username'] = update.message.from_user.username
     kb = [
-        [KeyboardButton("Show me Google!", web_app=WebAppInfo("https://127.0.0.1:5000/" + str(dict['id'])))]
+        [KeyboardButton("Show me Google!", web_app=WebAppInfo("https://property-1-qqtg.onrender.com/" + str(dict['id'])))]
     ]
     await update.effective_chat.send_message("I hear you loud and clear !",reply_markup=ReplyKeyboardMarkup(kb))
  
@@ -29,7 +29,7 @@ async def launch_web_ui28(update: Update, callback: CallbackContext):
 async def launch_web_ui2(update: Update, callback: CallbackContext):
 
     kb = [
-        [KeyboardButton("Show me Google!", web_app=WebAppInfo("http://127.0.0.1:5000/proficency"))]
+        [KeyboardButton("Show me Google!", web_app=WebAppInfo("https://property-1-qqtg.onrender.com/proficency"))]
     ]
     await update.message.reply_text(f"it's your user_ID {dict['id']}", reply_markup=ReplyKeyboardMarkup(kb))    
 
@@ -37,7 +37,7 @@ async def launch_web_ui3(update: Update, callback: CallbackContext):
     
     new = update.message.from_user.id
     kb = [
-        [KeyboardButton("Show me Google!", web_app=WebAppInfo("http://127.0.0.1:5000/admin/" + str(new)))]
+        [KeyboardButton("Show me Google!", web_app=WebAppInfo("https://property-1-qqtg.onrender.com/admin/" + str(new)))]
     ]
     await update.message.reply_text(f"it's your user_ID {dict['id']}", reply_markup=ReplyKeyboardMarkup(kb))
 

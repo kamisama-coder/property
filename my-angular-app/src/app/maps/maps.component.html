@@ -1,0 +1,19 @@
+<div class="container py-4">
+  <!-- Search Input + Button -->
+  <div class="d-flex flex-column flex-md-row align-items-stretch gap-3 mb-3">
+    <input
+      type="text"
+      class="form-control shadow-sm rounded-pill px-4 py-2"
+      [(ngModel)]="queryValue"
+      placeholder="Search location"
+    />
+    <button class="btn btn-outline-secondary rounded-pill shadow-sm px-4" (click)="searchLocation()">
+      🔍 Search
+    </button>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map" class="map-container rounded shadow"></div>
+</div>
+
+
