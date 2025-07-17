@@ -57,15 +57,14 @@ export class PropertyFormComponent implements OnDestroy {
 
         this.propertyForm.patchValue({
           address: post.address,
-          size: post.size,
+          size: post.bhk,
           price_suffix: post.price_suffix,
           price: post.price,
-          area_sqft: post.area_sqft,
+          area_sqft: post.size,
           status: post.status,
           proxy_address: post.proxy_address,
           long: post.long,
           latt: post.latt,
-          id: post.user_id,
           phone: post.phone
         });
         for(let i=0;i<response[0].pics.length;i++){

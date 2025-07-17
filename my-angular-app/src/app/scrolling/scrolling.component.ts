@@ -17,8 +17,13 @@ import { HttpClientModule } from '@angular/common/http';
 export class ScrollingComponent {
   setup:any[] = []
   query:string = ''
+  perfectindex:string = ''
 
   constructor(private route: ActivatedRoute, private http: HttpClient, private router: Router) {
+     this.route.queryParams.subscribe(params => {
+      this.perfectindex = params['index'];
+    }); 
+    console.log(`you friend is: ${this.perfectindex}`)
      this.http.get<any>('http://127.0.0.1:5000/system-server',{}).subscribe({
                 next: (response) => {
                   this.setup = response;
@@ -39,9 +44,15 @@ export class ScrollingComponent {
    });
   }
 
-  edit(id:number){
+  imformation(id:number){
+    this.router.navigate(['/page'], {
+    queryParams: { index: id }
+   });
+  }
+
+  edit(id:number,user_id:string){
     this.router.navigate(['/editing'], {
-    queryParams: { index: id,edit: true }
+    queryParams: { index: id,edit: true,user_id:user_id }
     });
   }
 

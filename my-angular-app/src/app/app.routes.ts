@@ -4,8 +4,10 @@ import { MapsComponent } from './maps/maps.component';
 import { ScrollingComponent } from './scrolling/scrolling.component';
 import { LLMComponent } from './llm/llm.component';
 import { PictureComponent } from './picture/picture.component';
+import { WallpaperComponent } from './wallpaper/wallpaper.component';
 
 export const routes: Routes = [
+    {path: 'page', component:WallpaperComponent},
     { path: 'maps', component: MapsComponent },
     { path: 'scroll', component: ScrollingComponent },
     { path: 'llm', component: LLMComponent },

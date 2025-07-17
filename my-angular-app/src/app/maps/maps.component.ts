@@ -61,12 +61,33 @@ export class MapsComponent implements OnInit, AfterViewInit {
 
   searchLocation(): void {
     this.markerGroup.clearLayers();
-
+    var query = this.queryValue.split(',')[0];
     this.L.marker([this.lat, this.lon])
       .addTo(this.markerGroup)
       .bindPopup('Initial Location')
       .openPopup();
 
+    if(query == "show places that are in close proximity"){
+      this.http.get<any>("http://127.0.0.1:5000/proficency",{params: {
+      latt: this.lat,
+      lon: this.lon,
+      query: this.queryValue.split(',')[1] || '10'
+    }}).subscribe({
+      next:(response) =>{
+         console.log(response)
+        if(response.length == 0){
+          alert("no property found")
+        }
+        for(let i=0;i<response.length;i++){
+            this.L.marker([response[i].long, response[i].latt])
+            .addTo(this.markerGroup)
+            .bindPopup(`Location: ${response[i].address}<br>Price: ${response[i].price_suffix} ${response[i].price}`);
+        }
+      } 
+    })
+    }  
+
+    else{  
     const query = {
       lat: this.lat,
       lon: this.lon,
@@ -75,7 +96,6 @@ export class MapsComponent implements OnInit, AfterViewInit {
 
     this.http.post<any>('http://127.0.0.1:5000/system_design', query).subscribe({
       next: (response) => {
-        console.log(response)
         const storage = response;
 
         for (let i = 0; i < storage.length; i++) {
@@ -92,5 +112,6 @@ export class MapsComponent implements OnInit, AfterViewInit {
         console.error("AJAX error occurred.");
       }
     });
+  }
   }
 }

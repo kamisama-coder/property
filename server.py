@@ -64,6 +64,9 @@ def is_within_radius(center_lat, center_lon, point_lat, point_lon, radius_km):
     distance_km = geodesic(center_point, point).kilometers
     return distance_km <= radius_km
 
+def is_same_location(lat1, lon1, lat2, lon2, tolerance=0.00001):
+    return abs(lat1 - lat2) < tolerance and abs(lon1 - lon2) < tolerance
+
 @app.route('/',  methods =["GET", "POST"])
 def hello_world():
     if request.method == "POST":
@@ -140,40 +143,29 @@ def search():
 
 @app.route('/proficency',  methods =["GET", "POST"])
 def prof():
-    if request.method == "POST":
+    if request.method == "GET":
         property_list = []
 
-        size = request.form.get("size")
-        price = request.form.get("price")
-        long = request.form.get("long")
-        latt = request.form.get("latt")
-        status = request.form.get("status")
-        price_suffix = request.form.get("price_suffix")
-
-        results = db.session.query(Post).filter(
-            Post.size == size,
-            Post.price == price,
-            Post.price_suffix == price_suffix,
-            Post.status == status
-        ).all()
+        latt = float(request.args.get("latt"))
+        long = float(request.args.get("lon"))
+        query = int(request.args.get("query"))
+        results = db.session.query(Post).all()
 
         for i in results:
-            if is_within_radius(latt, long, i.latt, i.long, 20):
-                base64_image = base64.b64encode(i.cover).decode('utf-8')
-                data_url = f"data:image/jpeg;base64,{base64_image}"
-                property_list.append({
-                    "cover": data_url,
-                    "data": {
-                        "id": i.user_id,
+            if is_within_radius(latt, long, i.latt, i.long, query):
+                if is_same_location(latt, long, i.latt, i.long):
+                    continue
+                property_list.append(
+                    {
                         "address": i.address,
                         "price": i.price,
                         "price_suffix": i.price_suffix,
                         "status": i.status,
-                        "size": i.size,
+                        "bhk": i.bhk,
                         "long": i.long,
                         "latt": i.latt
                     }
-                })
+                )
 
         return jsonify(property_list)
 
@@ -192,10 +184,30 @@ def pic():
             pic_list.append(data_url)
     return jsonify(pic_list)
 
-@app.route('/admin/<string:index>',  methods =["GET", "POST"])
-def admin(index):
-    admin = db.session.query(Post).filter(Post.user_id == index).all()
-    return render_template("admin.html", admin = admin)
+@app.route('/page',  methods =["GET", "POST"])
+def admin():
+    if request.method == "GET":
+        index = request.args.get("index")
+        post = db.session.query(Post).filter(Post.id == index).first()
+
+        per_square_rate = f"₹{round(post.price / post.size, 2)}" 
+        store = [{
+            'id': post.user_id,
+            'address': post.address,
+            'size': post.size,
+            'price': post.price,
+            'price_suffix': post.price_suffix,
+            'long': post.long,
+            'latt': post.latt,
+            'phone': post.phone,
+            'status': post.status,
+            'bhk': post.bhk,
+            'proxy_address': post.proxy_address,
+            'per_square_rate': per_square_rate
+        }]
+      
+        return jsonify(store)
+
 
 
 @app.route('/edit/<index>', methods=["GET", "POST"])
@@ -339,60 +351,91 @@ def gemini():
         print(response)
 
         posts = db.session.query(Post)
+        vector = []
+        global_filter = posts
         filters_applied = 0  
 
+        # Location filter
         if response.get('location'):
             keywords = response["location"].strip().lower().split()
-            for index,word in enumerate(keywords):
+            for index, word in enumerate(keywords):
                 check = posts.filter(func.lower(Post.proxy_address).like(f"%{word}%"))
                 if check.count() == 0 and index > 0:
                     continue
-                posts = check
+                posts = check  
+            global_filter = posts      
             filters_applied += 1
 
+        # BHK filter
         if response.get('bhk'):
             size = str(response['bhk'])
             filters_applied += 1
+            check = global_filter
             if size.startswith("<"):
+                check = global_filter.filter(Post.bhk < float(size[1:]))
                 posts = posts.filter(Post.bhk < float(size[1:]))
             elif size.startswith(">"):
+                check = global_filter.filter(Post.bhk > float(size[1:]))
                 posts = posts.filter(Post.bhk > float(size[1:]))
             elif "-" in size:
                 low, high = map(float, size.split("-"))
+                check = global_filter.filter(Post.bhk.between(low, high))
                 posts = posts.filter(Post.bhk.between(low, high))
             else:
+                check = global_filter.filter(Post.bhk == float(size))
                 posts = posts.filter(Post.bhk == float(size))
 
+            check = check.all()
+            vector = list({post.id: post for post in check + posts.all()}.values())
+
+        # Price filter (same pattern)
         if response.get('price'):
-            filters_applied += 1
             price = str(response['price'])
+            filters_applied += 1
+            check = global_filter
             if price.startswith("<"):
+                check = global_filter.filter(Post.price < float(price[1:]))
                 posts = posts.filter(Post.price < float(price[1:]))
             elif price.startswith(">"):
+                check = global_filter.filter(Post.price > float(price[1:]))
                 posts = posts.filter(Post.price > float(price[1:]))
             elif "-" in price:
                 low, high = map(float, price.split("-"))
+                check = global_filter.filter(Post.price.between(low, high))
                 posts = posts.filter(Post.price.between(low, high))
             else:
+                check = global_filter.filter(Post.price == float(price))
                 posts = posts.filter(Post.price == float(price))
 
+            check = check.all()
+            vector = list({post.id: post for post in check + posts.all()}.values())
+
+        # Size filter (same pattern)
         if response.get('size'):
-            filters_applied += 1
             size = str(response['size'])
+            filters_applied += 1
+            check = global_filter
             if size.startswith("<"):
+                check = global_filter.filter(Post.size < float(size[1:]))
                 posts = posts.filter(Post.size < float(size[1:]))
             elif size.startswith(">"):
+                check = global_filter.filter(Post.size > float(size[1:]))
                 posts = posts.filter(Post.size > float(size[1:]))
             elif "-" in size:
                 low, high = map(float, size.split("-"))
+                check = global_filter.filter(Post.size.between(low, high))
                 posts = posts.filter(Post.size.between(low, high))
             else:
+                check = global_filter.filter(Post.size == float(size))
                 posts = posts.filter(Post.size == float(size))
+
+            check = check.all()
+            vector = list({post.id: post for post in check + posts.all()}.values())
 
         if filters_applied == 0:
             return jsonify({"error": "Please specify at least one filter (e.g., price, size, location, etc.)"})
 
-        results = posts.all()
+        results = vector
         if not results:
             return jsonify({"error": "No properties found matching the criteria."})
 
@@ -401,6 +444,7 @@ def gemini():
             data_url = f"data:image/jpeg;base64,{base64.b64encode(i.cover).decode('utf-8')}"
             property_list.append({
                 "cover": data_url,
+                "user_id":i.user_id,
                 "id": i.id,
                 "address": i.address,
                 "price": i.price,
@@ -499,6 +543,7 @@ def clipsort():
 
         score.append({
             "id": post.id,
+            "user_id":post.user_id,
             "score": avg_score,
             "cover": data_url,
             "address": post.address,
