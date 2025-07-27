@@ -27,6 +27,9 @@
               <li><i class="bi bi-telephone"></i> {{ item.phone }}</li>
               <li><i class="bi bi-geo-alt"></i>proxy address: {{ item.proxy_address }}</li>
               <li><i class="bi bi-check-circle-fill text-success"></i> Status: {{ item.status }}</li>
+              <button class="btn btn-outline-secondary w-100" (click)="pics(item.id)">
+              🖼️ Pictures
+              </button>
             </ul>
           </div>
         </div>

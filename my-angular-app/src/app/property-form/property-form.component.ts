@@ -42,16 +42,18 @@ export class PropertyFormComponent implements OnDestroy {
   kami = 3;
   addressSub: Subscription | undefined;
   cover : { vector: string, files: FileList | null } = { vector: 'cover', files: null };
-
+  checkid:string = ''
   
 
   constructor() {
    this.route.queryParams.subscribe(params => {
       this.editing = params['edit'] || false;
       this.editid = params['index']
+      this.checkid = params['user_id']
+
     }); 
    if (this.editing) {
-    this.http.get<any>('http://localhost:5000/edit/'+this.editid).subscribe({
+    this.http.get<any>('http://localhost:5000/edit/'+this.editid+'/'+this.checkid).subscribe({
       next: (response) => {
         const post = response[0]; // adjust if your API structure changes
 
@@ -193,7 +195,7 @@ export class PropertyFormComponent implements OnDestroy {
   });
   }
   else{
-    this.http.post('http://127.0.0.1:5000/edit/'+this.editid, formData).subscribe({
+    this.http.post('http://127.0.0.1:5000/edit/'+this.editid+'/'+this.checkid, formData).subscribe({
     next: (res) => console.log('Upload successful:', res),
     error: (err) => console.error('Upload error:', err)
   });

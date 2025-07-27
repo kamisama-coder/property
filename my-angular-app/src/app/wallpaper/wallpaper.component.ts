@@ -27,6 +27,12 @@ export class WallpaperComponent {
                 }
       })
 
+    }
+
+    pics(id:number){
+    this.router.navigate(['/pics'], {
+    queryParams: { index: id }
+   });
   }
 
 }

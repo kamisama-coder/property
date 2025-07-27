@@ -192,7 +192,7 @@ def admin():
 
         per_square_rate = f"₹{round(post.price / post.size, 2)}" 
         store = [{
-            'id': post.user_id,
+            'id': post.id,
             'address': post.address,
             'size': post.size,
             'price': post.price,
@@ -210,14 +210,12 @@ def admin():
 
 
 
-@app.route('/edit/<index>', methods=["GET", "POST"])
-def nope(index):
+@app.route('/edit/<index>/<id>', methods=["GET", "POST"])
+def nope(index,id):
     if request.method == "GET":
-        posts = db.session.query(Post).filter(Post.id == index).all()
+        post = db.session.query(Post).filter(Post.id == index, Post.user_id == id).first()
 
-        store = []
-        for post in posts:
-            store.append({
+        store=[{
                 'id': post.user_id,
                 'address': post.address,
                 'size': post.size,
@@ -230,7 +228,7 @@ def nope(index):
                 'bhk': post.bhk,
                 'proxy_address': post.proxy_address,
                 'pics': []  # ✅ Initialize the 'pics' array
-            })
+        }]
 
         pics = db.session.query(Picture).filter(Picture.property_id == index).all()
 
@@ -239,6 +237,7 @@ def nope(index):
                 store[0]["pics"].append(it.property_string)
 
         return jsonify(store)
+    
     if request.method == "POST":
         post = db.session.get(Post, index)
         json_data = request.form.get("form")
@@ -363,7 +362,8 @@ def gemini():
                 if check.count() == 0 and index > 0:
                     continue
                 posts = check  
-            global_filter = posts      
+            global_filter = posts
+            vector = list({post.id: post for post in posts.all()}.values())      
             filters_applied += 1
 
         # BHK filter
@@ -386,7 +386,7 @@ def gemini():
                 posts = posts.filter(Post.bhk == float(size))
 
             check = check.all()
-            vector = list({post.id: post for post in check + posts.all()}.values())
+            vector = list({post.id: post for post in check + posts.all() + vector}.values())
 
         # Price filter (same pattern)
         if response.get('price'):
@@ -408,7 +408,7 @@ def gemini():
                 posts = posts.filter(Post.price == float(price))
 
             check = check.all()
-            vector = list({post.id: post for post in check + posts.all()}.values())
+            vector = list({post.id: post for post in check + posts.all() + vector}.values())
 
         # Size filter (same pattern)
         if response.get('size'):
@@ -430,7 +430,7 @@ def gemini():
                 posts = posts.filter(Post.size == float(size))
 
             check = check.all()
-            vector = list({post.id: post for post in check + posts.all()}.values())
+            vector = list({post.id: post for post in check + posts.all() + vector}.values())
 
         if filters_applied == 0:
             return jsonify({"error": "Please specify at least one filter (e.g., price, size, location, etc.)"})
