@@ -4,13 +4,15 @@ FROM python:3.12.4
 # Set working directory inside container
 WORKDIR /app
 
-# Copy backend files into the container
-COPY . .
+# 1. Copy only the requirements file to leverage Docker cache
+COPY requirements.txt .
 
-# Install dependencies
+# 2. Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install git+https://github.com/openai/CLIP.git
-# Expose the backend port (change if needed)
 
-# Run the app (change app.py and port if needed)
+# 3. Copy the rest of the application code
+COPY . .
+
+# Run the app
 CMD ["python", "server.py"]
