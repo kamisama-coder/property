@@ -10,6 +10,7 @@ from google import genai
 from dotenv import load_dotenv
 import torch
 import overpy
+import simplejson as json1
 from flask_cors import CORS
 import json
 from io import BytesIO

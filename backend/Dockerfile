@@ -14,5 +14,5 @@ RUN pip install git+https://github.com/openai/CLIP.git
 # 3. Copy the rest of the application code
 COPY . .
 
-# Run the app
-CMD ["python", "server.py"]
+# Use Gunicorn to run the app in production
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "server:app"]
