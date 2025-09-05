@@ -385,7 +385,7 @@ def gemini():
 
             check = check.all()
             if rank[response.get('bhk').get('priority')]:
-                    rank[response.get('bhk').get('priority')] = check
+                    rank[response.get('bhk').get('priority')].extend(check)
             else:
                     rank[response.get('bhk').get('priority')] = []
                     rank[response.get('bhk').get('priority')].append(check)
@@ -413,14 +413,14 @@ def gemini():
 
             check = check.all()
             if rank[response.get('price').get('priority')]:
-                    rank[response.get('price').get('priority')] = check
+                    rank[response.get('price').get('priority')].extend(check)
             else:
                     rank[response.get('price').get('priority')] = []
                     rank[response.get('price').get('priority')].append(check)
 
         # Size filter (same pattern)
         if response.get('size'):
-            size = str(response['size'])
+            size = str(response['size']['value'])
             filters_applied += 1
             check = global_filter
             if size.startswith("<"):
@@ -439,7 +439,7 @@ def gemini():
 
             check = check.all()    
             if rank[response.get('size').get('priority')]:
-                    rank[response.get('size').get('priority')] = check
+                    rank[response.get('size').get('priority')].extend(check)
             else:
                     rank[response.get('size').get('priority')] = []
                     rank[response.get('size').get('priority')].append(check)    
