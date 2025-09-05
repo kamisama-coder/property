@@ -347,7 +347,7 @@ def gemini():
 
         response = json.loads(raw_response.text)
         print(response)
-
+        rank = {}
         posts = db.session.query(Post)
         vector = []
         global_filter = posts
@@ -361,53 +361,62 @@ def gemini():
                 if check.count() == 0 and index > 0:
                     continue
                 posts = check  
-            global_filter = posts
-            vector = list({post.id: post for post in posts.all()}.values())      
+            global_filter = posts   
             filters_applied += 1
 
         # BHK filter
         if response.get('bhk'):
-            size = str(response['bhk'])
+            size = str(response['bhk']['value'])
             filters_applied += 1
             check = global_filter
             if size.startswith("<"):
-                check = global_filter.filter(Post.bhk < float(size[1:]))
+                check = check.filter(Post.bhk < float(size[1:]))
                 posts = posts.filter(Post.bhk < float(size[1:]))
             elif size.startswith(">"):
-                check = global_filter.filter(Post.bhk > float(size[1:]))
+                check = check.filter(Post.bhk > float(size[1:]))
                 posts = posts.filter(Post.bhk > float(size[1:]))
             elif "-" in size:
                 low, high = map(float, size.split("-"))
-                check = global_filter.filter(Post.bhk.between(low, high))
+                check = check.filter(Post.bhk.between(low, high))
                 posts = posts.filter(Post.bhk.between(low, high))
             else:
-                check = global_filter.filter(Post.bhk == float(size))
+                check = check.filter(Post.bhk == float(size))
                 posts = posts.filter(Post.bhk == float(size))
 
             check = check.all()
-            vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            if rank[response.get('bhk').get('priority')]:
+                    rank[response.get('bhk').get('priority')] = check
+            else:
+                    rank[response.get('bhk').get('priority')] = []
+                    rank[response.get('bhk').get('priority')].append(check)
+          
+            # vector = list({post.id: post for post in check + posts.all() + vector}.values())
 
         # Price filter (same pattern)
         if response.get('price'):
-            price = str(response['price'])
+            price = str(response['price']['value'])
             filters_applied += 1
             check = global_filter
             if price.startswith("<"):
-                check = global_filter.filter(Post.price < float(price[1:]))
+                check = check.filter(Post.price < float(price[1:]))
                 posts = posts.filter(Post.price < float(price[1:]))
             elif price.startswith(">"):
-                check = global_filter.filter(Post.price > float(price[1:]))
+                check = check.filter(Post.price > float(price[1:]))
                 posts = posts.filter(Post.price > float(price[1:]))
             elif "-" in price:
                 low, high = map(float, price.split("-"))
-                check = global_filter.filter(Post.price.between(low, high))
+                check = check.filter(Post.price.between(low, high))
                 posts = posts.filter(Post.price.between(low, high))
             else:
-                check = global_filter.filter(Post.price == float(price))
+                check = check.filter(Post.price == float(price))
                 posts = posts.filter(Post.price == float(price))
 
             check = check.all()
-            vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            if rank[response.get('price').get('priority')]:
+                    rank[response.get('price').get('priority')] = check
+            else:
+                    rank[response.get('price').get('priority')] = []
+                    rank[response.get('price').get('priority')].append(check)
 
         # Size filter (same pattern)
         if response.get('size'):
@@ -415,21 +424,29 @@ def gemini():
             filters_applied += 1
             check = global_filter
             if size.startswith("<"):
-                check = global_filter.filter(Post.size < float(size[1:]))
+                check = check.filter(Post.size < float(size[1:]))
                 posts = posts.filter(Post.size < float(size[1:]))
             elif size.startswith(">"):
-                check = global_filter.filter(Post.size > float(size[1:]))
+                check = check.filter(Post.size > float(size[1:]))
                 posts = posts.filter(Post.size > float(size[1:]))
             elif "-" in size:
                 low, high = map(float, size.split("-"))
-                check = global_filter.filter(Post.size.between(low, high))
+                check = check.filter(Post.size.between(low, high))
                 posts = posts.filter(Post.size.between(low, high))
             else:
-                check = global_filter.filter(Post.size == float(size))
+                check = check.filter(Post.size == float(size))
                 posts = posts.filter(Post.size == float(size))
 
-            check = check.all()
-            vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            check = check.all()    
+            if rank[response.get('size').get('priority')]:
+                    rank[response.get('size').get('priority')] = check
+            else:
+                    rank[response.get('size').get('priority')] = []
+                    rank[response.get('size').get('priority')].append(check)    
+
+        sorted_dict = dict(sorted(rank.items()))  
+        vector = list({post.id: post for posts in sorted_dict.values() for post in posts}.values())
+        vector = list({post.id: post for post in posts.all() + vector}.values())
 
         if filters_applied == 0:
             return jsonify({"error": "Please specify at least one filter (e.g., price, size, location, etc.)"})
