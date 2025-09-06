@@ -388,7 +388,7 @@ def gemini():
                     rank[response.get('bhk').get('priority')].extend(check)
             else:
                     rank[response.get('bhk').get('priority')] = []
-                    rank[response.get('bhk').get('priority')].append(check)
+                    rank[response.get('bhk').get('priority')].extend(check)
           
             # vector = list({post.id: post for post in check + posts.all() + vector}.values())
 
@@ -416,7 +416,7 @@ def gemini():
                     rank[response.get('price').get('priority')].extend(check)
             else:
                     rank[response.get('price').get('priority')] = []
-                    rank[response.get('price').get('priority')].append(check)
+                    rank[response.get('price').get('priority')].extend(check)
 
         # Size filter (same pattern)
         if response.get('size'):
@@ -442,7 +442,7 @@ def gemini():
                     rank[response.get('size').get('priority')].extend(check)
             else:
                     rank[response.get('size').get('priority')] = []
-                    rank[response.get('size').get('priority')].append(check)    
+                    rank[response.get('size').get('priority')].extend(check)    
 
         sorted_dict = dict(sorted(rank.items()))  
         vector = list({post.id: post for posts in sorted_dict.values() for post in posts}.values())
