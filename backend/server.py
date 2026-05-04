@@ -14,6 +14,7 @@ from flask_cors import CORS
 import json
 from io import BytesIO
 from PIL import Image
+import pillow_avif
 import clip
 import os
 
@@ -23,9 +24,10 @@ reform = []
 
 app = Flask(__name__)
 CORS(app)
-app.config['SECRET_KEY'] =  os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = "frwfwr434343f34f3443f34f34ff"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///prop.sqlite3'
+
 db = SQLAlchemy()
 db.init_app(app)
 
@@ -319,134 +321,130 @@ def gemini():
         global reform  # 👈 Reference it inside the function
 
         data = request.get_json()
+        if not data or "query" not in data:
+            return jsonify({"error": "Missing 'query' in request body"})
         prompt = data["query"]
-        client = genai.Client()
+        client = genai.Client(api_key='AIzaSyCQjK2Tb0uKMhhNUlGZBUd3sT2AyCfQh1c')
 
+        
         raw_response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=f"""
-            You are an information extraction system. Given the prompt: "{prompt}", extract only the following keys if they are present:
+                model="gemini-2.5-flash",
+                contents=f"""
+                You are an information extraction system. Given the prompt: "{prompt}", extract only the following keys if they are present:
 
-            - size 
-            - price   
-            - location  
-            - bhk  
+                - size 
+                - price   
+                - location  
+                - bhk  
 
-            Rules:
-            - Use "<" if the prompt says "less than", and ">" for "more than".
-            - Use "-" if a range is mentioned (e.g., "1000-1500").
-            - Given an input like "2 crore", "1.5 crore", or "50 lakh", return the corresponding integer value without commas or units.
-            - Do not add any explanation or code.
-            - Return only a Python dictionary (no comments or text).
-            - Do NOT use markdown formatting like ```json.
-            - Output must start directly with and be valid for json.loads()
-            Output format:
-            {{"key1": "value1", "key2": "value2", ...}}
-            """
-        )
-
+                Rules:
+                - Use "<" if the prompt says "less than", and ">" for "more than".
+                - Use "-" if a range is mentioned (e.g., "1000-1500").
+                - Given an input like "2 crore", "1.5 crore", or "50 lakh", return the corresponding integer value without commas or units.
+                - Do not add any explanation or code.
+                - Return only a Python dictionary (no comments or text).
+                - Do NOT use markdown formatting like ```json.
+                - Output must start directly with and be valid for json.loads()
+                Output format:
+                {{"key1": "value1", "key2": "value2", ...}}
+                """
+            )
         response = json.loads(raw_response.text)
+       
         print(response)
-        rank = {}
+        
+
         posts = db.session.query(Post)
         vector = []
         global_filter = posts
         filters_applied = 0  
 
         # Location filter
-        if response.get('location'):
+        if response.get('location') and isinstance(response['location'], str):
             keywords = response["location"].strip().lower().split()
-            for index, word in enumerate(keywords):
+            for word in keywords:
                 check = posts.filter(func.lower(Post.proxy_address).like(f"%{word}%"))
-                if check.count() == 0 and index > 0:
+                if check.count() == 0:
                     continue
                 posts = check  
-            global_filter = posts   
+            global_filter = posts
+            vector = list({post.id: post for post in posts.all()}.values())      
             filters_applied += 1
 
         # BHK filter
         if response.get('bhk'):
-            size = str(response['bhk']['value'])
-            filters_applied += 1
-            check = global_filter
-            if size.startswith("<"):
-                check = check.filter(Post.bhk < float(size[1:]))
-                posts = posts.filter(Post.bhk < float(size[1:]))
-            elif size.startswith(">"):
-                check = check.filter(Post.bhk > float(size[1:]))
-                posts = posts.filter(Post.bhk > float(size[1:]))
-            elif "-" in size:
-                low, high = map(float, size.split("-"))
-                check = check.filter(Post.bhk.between(low, high))
-                posts = posts.filter(Post.bhk.between(low, high))
-            else:
-                check = check.filter(Post.bhk == float(size))
-                posts = posts.filter(Post.bhk == float(size))
+            size = str(response['bhk'])
+            try:
+                filters_applied += 1
+                check = global_filter
+                if size.startswith("<"):
+                    check = global_filter.filter(Post.bhk < float(size[1:]))
+                    posts = posts.filter(Post.bhk < float(size[1:]))
+                elif size.startswith(">"):
+                    check = global_filter.filter(Post.bhk > float(size[1:]))
+                    posts = posts.filter(Post.bhk > float(size[1:]))
+                elif "-" in size:
+                    low, high = map(float, size.split("-"))
+                    check = global_filter.filter(Post.bhk.between(low, high))
+                    posts = posts.filter(Post.bhk.between(low, high))
+                else:
+                    check = global_filter.filter(Post.bhk == float(size))
+                    posts = posts.filter(Post.bhk == float(size))
 
-            check = check.all()
-            if rank[response.get('bhk').get('priority')]:
-                    rank[response.get('bhk').get('priority')].extend(check)
-            else:
-                    rank[response.get('bhk').get('priority')] = []
-                    rank[response.get('bhk').get('priority')].extend(check)
-          
-            # vector = list({post.id: post for post in check + posts.all() + vector}.values())
+                check = check.all()
+                vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            except ValueError:
+                filters_applied -= 1
 
         # Price filter (same pattern)
         if response.get('price'):
-            price = str(response['price']['value'])
-            filters_applied += 1
-            check = global_filter
-            if price.startswith("<"):
-                check = check.filter(Post.price < float(price[1:]))
-                posts = posts.filter(Post.price < float(price[1:]))
-            elif price.startswith(">"):
-                check = check.filter(Post.price > float(price[1:]))
-                posts = posts.filter(Post.price > float(price[1:]))
-            elif "-" in price:
-                low, high = map(float, price.split("-"))
-                check = check.filter(Post.price.between(low, high))
-                posts = posts.filter(Post.price.between(low, high))
-            else:
-                check = check.filter(Post.price == float(price))
-                posts = posts.filter(Post.price == float(price))
+            price = str(response['price'])
+            try:
+                filters_applied += 1
+                check = global_filter
+                if price.startswith("<"):
+                    check = global_filter.filter(Post.price < float(price[1:]))
+                    posts = posts.filter(Post.price < float(price[1:]))
+                elif price.startswith(">"):
+                    check = global_filter.filter(Post.price > float(price[1:]))
+                    posts = posts.filter(Post.price > float(price[1:]))
+                elif "-" in price:
+                    low, high = map(float, price.split("-"))
+                    check = global_filter.filter(Post.price.between(low, high))
+                    posts = posts.filter(Post.price.between(low, high))
+                else:
+                    check = global_filter.filter(Post.price == float(price))
+                    posts = posts.filter(Post.price == float(price))
 
-            check = check.all()
-            if rank[response.get('price').get('priority')]:
-                    rank[response.get('price').get('priority')].extend(check)
-            else:
-                    rank[response.get('price').get('priority')] = []
-                    rank[response.get('price').get('priority')].extend(check)
+                check = check.all()
+                vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            except ValueError:
+                filters_applied -= 1
 
         # Size filter (same pattern)
         if response.get('size'):
-            size = str(response['size']['value'])
-            filters_applied += 1
-            check = global_filter
-            if size.startswith("<"):
-                check = check.filter(Post.size < float(size[1:]))
-                posts = posts.filter(Post.size < float(size[1:]))
-            elif size.startswith(">"):
-                check = check.filter(Post.size > float(size[1:]))
-                posts = posts.filter(Post.size > float(size[1:]))
-            elif "-" in size:
-                low, high = map(float, size.split("-"))
-                check = check.filter(Post.size.between(low, high))
-                posts = posts.filter(Post.size.between(low, high))
-            else:
-                check = check.filter(Post.size == float(size))
-                posts = posts.filter(Post.size == float(size))
+            size = str(response['size'])
+            try:
+                filters_applied += 1
+                check = global_filter
+                if size.startswith("<"):
+                    check = global_filter.filter(Post.size < float(size[1:]))
+                    posts = posts.filter(Post.size < float(size[1:]))
+                elif size.startswith(">"):
+                    check = global_filter.filter(Post.size > float(size[1:]))
+                    posts = posts.filter(Post.size > float(size[1:]))
+                elif "-" in size:
+                    low, high = map(float, size.split("-"))
+                    check = global_filter.filter(Post.size.between(low, high))
+                    posts = posts.filter(Post.size.between(low, high))
+                else:
+                    check = global_filter.filter(Post.size == float(size))
+                    posts = posts.filter(Post.size == float(size))
 
-            check = check.all()    
-            if rank[response.get('size').get('priority')]:
-                    rank[response.get('size').get('priority')].extend(check)
-            else:
-                    rank[response.get('size').get('priority')] = []
-                    rank[response.get('size').get('priority')].extend(check)    
-
-        sorted_dict = dict(sorted(rank.items()))  
-        vector = list({post.id: post for posts in sorted_dict.values() for post in posts}.values())
-        vector = list({post.id: post for post in posts.all() + vector}.values())
+                check = check.all()
+                vector = list({post.id: post for post in check + posts.all() + vector}.values())
+            except ValueError:
+                filters_applied -= 1
 
         if filters_applied == 0:
             return jsonify({"error": "Please specify at least one filter (e.g., price, size, location, etc.)"})
@@ -487,8 +485,7 @@ def server():
 def clipsort():
     data = request.get_json()
     query = data['query']
-
-    client = genai.Client()
+    client = genai.Client(api_key='AIzaSyCQjK2Tb0uKMhhNUlGZBUd3sT2AyCfQh1c')
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
@@ -510,7 +507,7 @@ def clipsort():
 
     print(response.text)
     response_dict = json.loads(response.text)  
-  
+    
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model, preprocess = clip.load("ViT-B/32", device=device)
@@ -525,7 +522,7 @@ def clipsort():
 
     for file_id in store:
         posts_query = db.session.query(Picture).filter(Picture.property_id == file_id)
-        count = 0
+        count = 1
         current_score = 0
         for place, place_query in response_dict.items():
             max_similarity = 0
@@ -542,13 +539,15 @@ def clipsort():
                     with torch.no_grad():
                         image_features = model.encode_image(image_input)
                         text_features = model.encode_text(text_input)
+
+                        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+                        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
                     similarity = (image_features @ text_features.T).squeeze().cpu().item()
 
                     if similarity > max_similarity:
                         max_similarity = similarity
 
                 current_score += max_similarity
-                count += 1
 
         avg_score = current_score / count 
 
